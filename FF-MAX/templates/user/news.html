@@ -1,0 +1,42 @@
+{% extends 'user/base.html' %}
+
+{% block title %}News - FF Squad Maker{% endblock %}
+
+{% block content %}
+<section class="pt-28 pb-20 px-4 sm:px-6 lg:px-8 min-h-[70vh]">
+    <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-12">
+            <h2 class="heading-font text-3xl md:text-4xl font-black uppercase italic tracking-tight mb-3">Latest <span class="text-orange-500">News</span></h2>
+            <p class="text-slate-400">Stay updated with the latest announcements.</p>
+        </div>
+        <div id="news-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="col-span-full text-center text-slate-500 py-10">Loading news...</div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadNews() {
+        try {
+            const res = await fetch('/api/news/');
+            const news = await res.json();
+            const container = document.getElementById('news-grid');
+            if (!news.length) {
+                container.innerHTML = '<div class="col-span-full text-center text-slate-500 py-10">No news available.</div>';
+                return;
+            }
+            container.innerHTML = news.map(n => `
+                <div class="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 card-hover animate-in">
+                    <span class="text-orange-500 text-xs font-bold uppercase tracking-wider">${n.date}</span>
+                    <h4 class="heading-font text-lg font-bold mt-2 mb-3">${n.title}</h4>
+                    <p class="text-slate-400 text-sm leading-relaxed">${n.content}</p>
+                </div>
+            `).join('');
+        } catch (e) { console.error('Failed to load news', e); }
+    }
+    loadNews();
+</script>
+{% endblock %}
+

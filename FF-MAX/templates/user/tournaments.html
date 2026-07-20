@@ -1,0 +1,322 @@
+{% extends 'user/base.html' %}
+
+{% block title %}Tournaments - FF Squad Maker{% endblock %}
+
+{% block content %}
+<section class="pt-28 pb-20 px-4 sm:px-6 lg:px-8 bg-slate-950/50 min-h-[70vh]">
+    <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-12">
+            <h2 class="heading-font text-3xl md:text-4xl font-black uppercase italic tracking-tight mb-3">Active <span class="text-orange-500">Tournaments</span></h2>
+            <p class="text-slate-400">Join upcoming matches and compete for amazing prizes.</p>
+        </div>
+        <div id="tournaments-grid" class="grid grid-cols-2 gap-6 place-items-stretch">
+            <div class="col-span-2 text-center text-slate-500 py-10">Loading tournaments...</div>
+        </div>
+    </div>
+</section>
+
+<!-- Tournament Registration Modal -->
+<div id="tournament-modal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-[100] px-4 backdrop-blur-sm">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 md:p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <h3 class="heading-font text-2xl font-black uppercase italic tracking-tight mb-6 text-center">Join <span class="text-orange-500">Tournament</span></h3>
+        <div id="modal-tournament-info" class="bg-slate-900/50 border border-slate-700 rounded-lg p-3 mb-4">
+            <span class="text-slate-400 text-xs font-bold uppercase">Tournament</span>
+            <div id="modal-tournament-title" class="text-white font-bold"></div>
+        </div>
+        <form id="tournament-register-form" class="space-y-5">
+            <input type="hidden" id="modal-tournament-id" name="tournament_id">
+            <div id="register-form-section">
+                <label class="block text-sm font-bold text-slate-300 mb-2">Team Name</label>
+                <input type="text" name="team_name" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition-colors" placeholder="Enter your team name">
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-slate-300 mb-2">WhatsApp Number</label>
+                <input type="tel" name="contact" required maxlength="10" pattern="[0-9]{10}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition-colors" placeholder="9876543210" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-slate-300 mb-2">Slot Number</label>
+                <select id="modal-slot-select" name="slot_number" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition-colors">
+                    <option value="">Select Slot</option>
+                </select>
+            </div>
+            <div id="tournament-message" class="hidden p-4 rounded-lg text-sm font-bold"></div>
+            <div class="flex gap-3 pt-2">
+                <button type="button" id="close-tournament-modal" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-lg transition-colors">Cancel</button>
+                <button type="submit" id="register-btn" class="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-lg transition-colors shadow-lg shadow-orange-600/20">Register</button>
+            </div>
+        </form>
+
+        <!-- Payment Section - Hidden Initially -->
+        <div id="payment-section" class="hidden mt-6 p-6 bg-gradient-to-br from-orange-600/10 to-orange-500/10 border-2 border-orange-500/30 rounded-2xl">
+            <div class="text-center mb-6">
+                <h4 class="text-xl font-bold text-orange-400 mb-2">Complete Payment</h4>
+                <p class="text-orange-300 mb-4">Pay the exact entry fee shown below to confirm your slot booking</p>
+                <div id="payment-fee" class="text-3xl font-black text-white mb-6"></div>
+            </div>
+            <div class="flex flex-col items-center space-y-4">
+                <div class="text-center">
+                    <p class="text-slate-300 text-sm mb-1">Gol Tarun</p>
+                    <p class="text-slate-400 text-xs mb-3">Scan QR with any UPI app and pay the exact amount shown above</p>
+                    <img src="/static/images/tournament_upi_qr.png" alt="UPI QR Code" class="w-56 max-w-full h-auto mx-auto rounded-xl shadow-lg border-4 border-orange-500/50 object-contain">
+                    <p class="text-slate-500 text-xs mt-2 font-mono break-all">tarungol600-1@oksbi</p>
+                    <p class="text-slate-400 text-xs mt-2">Payment will be verified manually</p>
+                </div>
+                <input type="hidden" id="payment-reg-id">
+                <div class="w-full max-w-sm">
+                    <label class="block text-sm font-bold text-slate-300 mb-2">Transaction ID</label>
+                    <input type="text" id="transaction-id-input" placeholder="Enter your transaction ID" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition-colors text-sm">
+                    <p class="text-slate-500 text-xs mt-1">Example: UPI transaction reference or payment ID</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
+                    <button id="confirm-payment-btn" type="button" disabled class="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-all shadow-lg shadow-green-500/30">Payment Done ✓</button>
+                    <button id="close-payment-modal-btn" type="button" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-lg transition-colors border border-slate-600">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let tournamentsData = [];
+    let registrationsData = [];
+
+    async function loadTournaments() {
+        try {
+            const [tournamentsRes, regsRes] = await Promise.all([
+                fetch('/api/tournaments/'),
+                fetch('/api/tournament-register/').catch(() => ({ json: async () => [] }))
+            ]);
+            tournamentsData = await tournamentsRes.json();
+            registrationsData = await regsRes.json().catch(() => []);
+
+            const container = document.getElementById('tournaments-grid');
+            if (!tournamentsData.length) {
+                container.innerHTML = '<div class="col-span-full text-center text-slate-500 py-10">No tournaments available yet.</div>';
+                return;
+            }
+            container.innerHTML = tournamentsData.map(t => `
+                <div class="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8 card-hover animate-in min-h-[500px] flex flex-col">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="bg-orange-600/10 text-orange-400 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">${t.status}</span>
+                        <span class="text-slate-400 text-xs font-semibold">${t.game_mode} / ${t.mode}</span>
+                    </div>
+                    <h3 class="heading-font text-xl font-bold mb-2">${t.title}</h3>
+                    <div class="mb-4 text-center flex-1">
+                        <div class="grid grid-cols-2 gap-3 text-sm">
+                            <div><span class="text-slate-400">💰 Prize:</span><br><span class="text-green-400 font-bold">${t.prize}</span></div>
+                            <div><span class="text-slate-400">⚔️ Per Kill:</span><br><span class="font-semibold">${t.per_kill}</span></div>
+                            <div><span class="text-slate-400">💎 Entry:</span><br><span class="font-semibold">${t.entry}</span></div>
+                            <div><span class="text-slate-400">🗺️ Map:</span><br><span class="font-semibold">${t.map}</span></div>
+                            <div><span class="text-slate-400">📅 Date:</span><br><span class="font-semibold">${t.date}</span></div>
+                            <div><span class="text-slate-400">⏰ Time:</span><br><span class="font-semibold">${t.time}</span></div>
+                            <div><span class="text-slate-400">🎯 Total Slots:</span><br><span class="font-semibold">${t.max_slots}</span></div>
+                            <div><span class="text-slate-400">✅ Available Slots:</span><br><span class="font-bold text-orange-400">${t.available_slots}</span></div>
+                        </div>
+                        <p class="text-slate-500 text-xs mt-3 line-clamp-3">${t.rules}</p>
+                    </div>
+                    <button onclick="openTournamentModal(${t.id})" class="mt-auto block w-full text-center bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded-lg transition-colors text-sm">Register Now</button>
+                </div>
+            `).join('');
+        } catch (e) { console.error('Failed to load tournaments', e); }
+    }
+
+    // Modal logic
+    const modal = document.getElementById('tournament-modal');
+    const closeBtn = document.getElementById('close-tournament-modal');
+    const tournamentIdInput = document.getElementById('modal-tournament-id');
+    const tournamentTitleDiv = document.getElementById('modal-tournament-title');
+    const slotSelect = document.getElementById('modal-slot-select');
+    const form = document.getElementById('tournament-register-form');
+    const msgDiv = document.getElementById('tournament-message');
+
+    function openTournamentModal(preselectedId) {
+        const tournament = tournamentsData.find(t => t.id == preselectedId);
+        tournamentIdInput.value = preselectedId || '';
+        tournamentTitleDiv.textContent = tournament ? tournament.title : 'Unknown Tournament';
+        updateSlots(preselectedId || '');
+        msgDiv.classList.add('hidden');
+        document.getElementById('payment-section').classList.add('hidden');
+        document.getElementById('register-form-section').classList.remove('hidden');
+        form.classList.remove('hidden');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeTournamentModal() {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        form.reset();
+        document.getElementById('payment-section').classList.add('hidden');
+        document.getElementById('register-form-section').classList.remove('hidden');
+        form.classList.remove('hidden');
+        msgDiv.classList.add('hidden');
+        msgDiv.textContent = '';
+        msgDiv.className = 'hidden p-4 rounded-lg text-sm font-bold';
+        document.getElementById('transaction-id-input').value = '';
+        document.getElementById('confirm-payment-btn').disabled = true;
+        document.getElementById('confirm-payment-btn').textContent = 'Payment Done ✓';
+    }
+
+    function updateSlots(tournamentId) {
+        slotSelect.innerHTML = '<option value="">Select Slot</option>';
+        if (!tournamentId) return;
+        const tournament = tournamentsData.find(t => t.id == tournamentId);
+        if (!tournament) return;
+
+        const takenSlots = new Set();
+        if (Array.isArray(registrationsData)) {
+            registrationsData.forEach(r => {
+                if (r.tournament == tournamentId) takenSlots.add(r.slot_number);
+            });
+        }
+
+        for (let i = 1; i <= tournament.max_slots; i++) {
+            if (!takenSlots.has(i)) {
+                slotSelect.innerHTML += `<option value="${i}">Slot ${i}</option>`;
+            }
+        }
+    }
+
+    closeBtn.addEventListener('click', closeTournamentModal);
+    document.getElementById('close-payment-modal-btn').addEventListener('click', closeTournamentModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeTournamentModal(); });
+
+    // Transaction ID input handling
+    const transactionIdInput = document.getElementById('transaction-id-input');
+    const confirmPaymentBtn = document.getElementById('confirm-payment-btn');
+    
+    transactionIdInput.addEventListener('input', (e) => {
+        const hasValue = e.target.value.trim().length > 0;
+        confirmPaymentBtn.disabled = !hasValue;
+        if (hasValue) {
+            confirmPaymentBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        } else {
+            confirmPaymentBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+    });
+
+    // Payment confirmation
+    confirmPaymentBtn.addEventListener('click', async () => {
+        const regId = document.getElementById('payment-reg-id').value;
+        const transactionId = transactionIdInput.value.trim();
+        
+        if (!transactionId) {
+            msgDiv.classList.add('bg-red-600/20', 'text-red-400', 'border', 'border-red-600/30');
+            msgDiv.textContent = 'Please enter your transaction ID';
+            msgDiv.classList.remove('hidden');
+            return;
+        }
+        
+        confirmPaymentBtn.disabled = true;
+        confirmPaymentBtn.textContent = 'Confirming...';
+
+        try {
+            const res = await fetch('/api/confirm-payment/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ registration_id: regId, transaction_id: transactionId })
+            });
+            const result = await res.json();
+            if (result.success) {
+                msgDiv.classList.add('bg-green-600/20', 'text-green-400', 'border', 'border-green-600/30');
+                msgDiv.textContent = 'Payment confirmed! Your slot is secured.';
+                msgDiv.classList.remove('hidden');
+                setTimeout(() => { closeTournamentModal(); }, 1500);
+            } else {
+                msgDiv.classList.add('bg-red-600/20', 'text-red-400', 'border', 'border-red-600/30');
+                msgDiv.textContent = result.error || 'Confirmation failed.';
+                msgDiv.classList.remove('hidden');
+                confirmPaymentBtn.disabled = false;
+                confirmPaymentBtn.textContent = 'Payment Done ✓';
+            }
+        } catch (err) {
+            msgDiv.classList.add('bg-red-600/20', 'text-red-400', 'border', 'border-red-600/30');
+            msgDiv.textContent = 'Network error. Please try again.';
+            msgDiv.classList.remove('hidden');
+            confirmPaymentBtn.disabled = false;
+            confirmPaymentBtn.textContent = 'Payment Done ✓';
+        } finally {
+            confirmPaymentBtn.disabled = false;
+            confirmPaymentBtn.textContent = 'Payment Done ✓';
+        }
+    });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(form));
+        
+        // Validate WhatsApp number
+        const contact = data.contact.trim();
+        const phoneRegex = /^[6-9]\d{9}$/;
+        const hasAlphabets = /[a-zA-Z]/.test(contact);
+        
+        if (hasAlphabets) {
+            msgDiv.classList.add('bg-red-600/20', 'text-red-400', 'border', 'border-red-600/30');
+            msgDiv.textContent = 'Alphabets are not allowed. Please enter only numbers.';
+            msgDiv.classList.remove('hidden');
+            return;
+        }
+        
+        if (!phoneRegex.test(contact)) {
+            msgDiv.classList.add('bg-red-600/20', 'text-red-400', 'border', 'border-red-600/30');
+            msgDiv.textContent = 'Please enter a valid 10-digit WhatsApp number starting with 6-9 (e.g., 9876543210)';
+            msgDiv.classList.remove('hidden');
+            return;
+        }
+        
+        // Capture user's device time
+        const now = new Date();
+        data.device_registration_time = now.toISOString();
+        
+        const registerBtn = document.getElementById('register-btn');
+        registerBtn.disabled = true;
+        registerBtn.textContent = 'Registering...';
+
+        msgDiv.className = 'p-4 rounded-lg text-sm font-bold';
+        msgDiv.classList.add('hidden');
+
+        try {
+            const res = await fetch('/api/tournament-register/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+            if (result.success) {
+                if (result.payment_required) {
+                    // Show payment section
+                    document.getElementById('payment-reg-id').value = result.registration_id;
+                    document.getElementById('payment-fee').textContent = result.entry_fee;
+                    document.getElementById('register-form-section').classList.add('hidden');
+                    form.classList.add('hidden');
+                    document.getElementById('payment-section').classList.remove('hidden');
+                    msgDiv.classList.add('bg-green-600/20', 'text-green-400', 'border', 'border-green-600/30');
+                    msgDiv.textContent = 'Slot booked! Now complete payment.';
+                    msgDiv.classList.remove('hidden');
+                } else {
+                    // Free tournament - success
+                    msgDiv.classList.add('bg-green-600/20', 'text-green-400', 'border', 'border-green-600/30');
+                    msgDiv.textContent = 'Registration successful! Your slot is booked.';
+                    msgDiv.classList.remove('hidden');
+                    setTimeout(() => { closeTournamentModal(); }, 1500);
+                }
+            } else {
+                msgDiv.classList.add('bg-red-600/20', 'text-red-400', 'border', 'border-red-600/30');
+                msgDiv.textContent = result.error || 'Registration failed. Please try again.';
+                msgDiv.classList.remove('hidden');
+            }
+        } catch (err) {
+            msgDiv.classList.add('bg-red-600/20', 'text-red-400', 'border', 'border-red-600/30');
+            msgDiv.textContent = 'Network error. Please try again.';
+            msgDiv.classList.remove('hidden');
+        } finally {
+            registerBtn.disabled = false;
+            registerBtn.textContent = 'Register';
+        }
+    });
+
+    loadTournaments();
+</script>
+{% endblock %}

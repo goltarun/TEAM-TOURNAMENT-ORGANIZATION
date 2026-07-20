@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FF SQUAD MAKER | Find Your Team</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        .heading-font { font-family: 'Orbitron', sans-serif; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-in { animation: fadeIn 0.4s ease-out forwards; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const Icons = {
+            Search: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>,
+            User: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>,
+            CheckCircle: () => <svg className="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>,
+            Trophy: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>,
+            Zap: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>,
+            Clock: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+            Eye: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>,
+            QR: () => <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm8-2h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5zm13-2h3v2h-3v-2zm-3 0h2v2h-2v-2zm3 3h3v2h-3v-2zm-3 3h2v2h-2v-2zm3-3h2v2h-2v-2zm-3-3h2v2h-2v-2zm3 6h3v2h-3v-2zm-3 0h2v2h-2v-2zm6-6h2v2h-2v-2zm-3 0h2v2h-2v-2z" /></svg>
+        };
+
+        const roles = [
+            { name: 'Rusher', color: 'bg-red-500', icon: <Icons.Zap /> },
+            { name: 'Sniper', color: 'bg-blue-500', icon: <Icons.User /> },
+            { name: 'Support', color: 'bg-green-500', icon: <Icons.CheckCircle /> },
+            { name: 'Assaulter', color: 'bg-yellow-500', icon: <Icons.Trophy /> }
+        ];
+
+        const initialPlayers = [
+            { id: 1, name: 'Viper_FF', role: 'Rusher', rank: 'Grandmaster', game_type: 'BR', verified: true, contact: '9876543210', age: 19, id_code: '12345678', experience: 'Pro', playing_time: 'Night', bio: 'Best rusher in the state. Aggressive gameplay.' },
+            { id: 2, name: 'Silent_Killer', role: 'Sniper', rank: 'Heroic', game_type: 'CS', verified: true, contact: '9822334455', age: 21, id_code: '87654321', experience: 'Advanced', playing_time: 'Evening', bio: 'One tap specialist. I never miss a headshot.' },
+            { id: 3, name: 'Pro_Support', role: 'Support', rank: 'Diamond IV', game_type: 'BR', verified: false, contact: '9123456789', age: 17, id_code: '11223344', experience: 'Intermediate', playing_time: 'Morning', bio: 'I provide the best backup. Team player.' },
+            { id: 4, name: 'Legend_Booyah', role: 'Assaulter', rank: 'Heroic', game_type: 'CS', verified: false, contact: '9554433221', age: 20, id_code: '44332211', experience: 'Advanced', playing_time: 'Flexible', bio: 'Looking for a competitive squad for tournaments.' }
+        ];
+
+        const tournaments = [
+            { 
+                id: 1, 
+                title: 'Mega Booyah Cup', 
+                prize: '₹10,000', 
+                date: '25 April 2024', 
+                time: '08:00 PM',
+                per_kill: '₹20',
+                map: 'Bermuda',
+                mode: 'Squad',
+                entry: '₹50',
+                status: 'Open' 
+            },
+            { 
+                id: 2, 
+                title: 'Solo Survival Pro', 
+                prize: '₹5,000', 
+                date: '30 April 2024', 
+                time: '04:00 PM',
+                per_kill: '₹10',
+                map: 'Purgatory',
+                mode: 'Solo',
+                entry: 'Free',
+                status: 'Open' 
+            },
+            { 
+                id: 3, 
+                title: 'Duo Masters BR', 
+                prize: '₹3,000', 
+                date: '28 April 2024', 
+                time: '09:00 PM',
+                per_kill: '₹15',
+                map: 'Kalahari',
+                mode: 'Duo',
+                entry: '₹40',
+                status: 'Open' 
+            },
+            { 
+                id: 4, 
+                title: 'CS Clash Royale', 
+                prize: '₹2,500', 
+                date: '05 May 2024', 
+                time: '07:30 PM',
+                per_kill: 'N/A',
+                map: 'Bermuda (Remastered)',
+                mode: 'CS Squad',
+                entry: '₹30',
+                status: 'Coming Soon' 
+            }
+        ];
+
+        const news = [
+            { id: 1, date: 'Today', title: 'Season 40 Rewards leaked!', content: 'New Thompson skin and exclusive bundle coming next month.' },
+            { id: 2, date: 'Yesterday', title: 'Character Buffs Update', content: 'Chronos shield cooldown reduced by 5 seconds in latest patch.' }
+        ];
+
+        function waDigits(contact) {
+            return String(contact || '').replace(/\D/g, '');
+        }
+
+        function gameTypeLabelPlain(gt) {
+            if (gt === 'BR') return 'Battle Royale';
+            if (gt === 'CS') return 'Clash Squad';
+            return String(gt || '');
+        }
+
+        function buildPlayerWhatsAppPrefill(player) {
+            const siteName = 'FF Squad Maker';
+            const siteUrl = typeof window !== 'undefined' && window.location ? window.location.origin : '';
+            const lines = [
+                'Hello,',
+                '',
+                'I am contacting you after viewing your player profile on the FF Squad Maker website.',
+                '',
+                'Player details:',
+                '• Name (IGN): ' + (player.name || ''),
+                '• Game UID: ' + (player.id_code || ''),
+                '• Rank: ' + (player.rank || ''),
+                '• Role: ' + (player.role || ''),
+                '• Mode: ' + gameTypeLabelPlain(player.game_type),
+                '• Experience: ' + (player.experience || '-'),
+                '• Preferred time: ' + (player.playing_time || 'Flexible'),
+                '• Age: ' + (player.age != null ? player.age + ' years' : '-'),
+                '• WhatsApp / Contact: ' + (player.contact || ''),
+            ];
+            if (player.bio) {
+                lines.push('');
+                lines.push('Bio: ' + player.bio);
+            }
+            if (player.verified) {
+                lines.push('');
+                lines.push('Verified player: Yes');
+            }
+            lines.push('', '────────', siteName, siteUrl);
+            return lines.join('\n');
+        }
+
+        function App() {
+            const [view, setView] = useState('home');
+            const [searchTerm, setSearchTerm] = useState('');
+            const [filterRole, setFilterRole] = useState('All');
+            const [gameType, setGameType] = useState('');
+            const [players, setPlayers] = useState(initialPlayers);
+            const [showContactModal, setShowContactModal] = useState(false);
+            const [selectedPlayer, setSelectedPlayer] = useState(null);
+            const [showTournamentModal, setShowTournamentModal] = useState(false);
+            const [showViewModal, setShowViewModal] = useState(false);
+            const [showPaymentModal, setShowPaymentModal] = useState(false);
+            const [selectedTournament, setSelectedTournament] = useState(null);
+            const [formErrors, setFormErrors] = useState({});
+
+            const handleRegister = (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const newPlayer = {
+                    id: players.length + 1,
+                    name: formData.get('name'),
+                    role: formData.get('role'),
+                    rank: formData.get('rank'),
+                    game_type: formData.get('game_type'),
+                    contact: formData.get('contact'),
+                    age: formData.get('age'),
+                    id_code: formData.get('id_code'),
+                    experience: formData.get('experience'),
+                    playing_time: formData.get('playing_time'),
+                    bio: formData.get('bio'),
+                    verified: false
+                };
+
+                if (!newPlayer.name || !newPlayer.role || !newPlayer.contact || !newPlayer.id_code) {
+                    setFormErrors({ general: 'Please fill in all required fields.' });
+                    return;
+                }
+
+                setPlayers([newPlayer, ...players]);
+                setView('player');
+                setFormErrors({});
+                alert('Registration Success! Have fun playing.');
+            };
+
+            const showContact = (player) => {
+                setSelectedPlayer(player);
+                setShowContactModal(true);
+            };
+
+            const handleTournamentJoin = (t) => {
+                setSelectedTournament(t);
+                setShowTournamentModal(true);
+            };
+
+            const handleTournamentView = (t) => {
+                setSelectedTournament(t);
+                setShowViewModal(true);
+            };
+
+            const handleReserveSlot = (e) => {
+                e.preventDefault();
+                setShowTournamentModal(false);
+                if (selectedTournament.entry !== 'Free') {
+                    setShowPaymentModal(true);
+                } else {
+                    alert('Registration Done! Free entry confirmed.');
+                }
+            };
+
+            const getSlotCount = (mode) => {
+                if (mode.includes('CS')) return 2;
+                if (mode === 'Solo') return 50;
+                if (mode === 'Duo') return 26;
+                if (mode === 'Squad') return 13;
+                return 12;
+            };
+
+            return (
+                <div className="min-h-screen pb-20">
+                    {/* Navigation */}
+                    <nav className="glass sticky top-0 z-50 px-6 py-4 border-b border-slate-700/50 flex justify-between items-center">
+                        <div className="flex items-center gap-3 cursor-pointer" onClick={() => setView('home')}>
+                            <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center font-black text-white italic transform -skew-x-12">FF</div>
+                            <h1 className="heading-font text-xl font-black tracking-tighter">SQUAD<span className="text-orange-500">MAKER</span></h1>
+                        </div>
+                        <div className="hidden md:flex gap-6 text-sm font-bold uppercase tracking-wider">
+                            {['home', 'player', 'tournaments', 'news'].map(v => (
+                                <button 
+                                    key={v}
+                                    onClick={() => setView(v)}
+                                    className={`${view === v ? 'text-orange-500' : 'text-slate-400 hover:text-white'} transition-colors`}
+                                >
+                                    {v}
+                                </button>
+                            ))}
+                        </div>
+                        <button onClick={() => setView('register')} className="bg-orange-600 hover:bg-orange-700 px-5 py-2 rounded-xl text-xs font-black uppercase shadow-lg shadow-orange-600/20 transition-all active:scale-95">Registration</button>
+                    </nav>
+
+                    {/* Main Content */}
+                    <main className="max-w-7xl mx-auto px-6 pt-12">
+                        
+                        {view === 'home' && (
+                            <div className="text-center py-20 animate-in">
+                                <span className="bg-orange-600/10 text-orange-500 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest mb-6 inline-block border border-orange-500/20">The Pro Community</span>
+                                <h2 className="heading-font text-5xl md:text-7xl font-black mb-6 leading-tight uppercase">Find Your Perfect <span className="text-orange-500">Team</span></h2>
+                                <p className="text-slate-400 max-w-2xl mx-auto mb-10 text-lg leading-relaxed">
+                                    Search for Snipers, Rushers, and Supports. Join new tournaments and win prizes.
+                                </p>
+                                <div className="flex flex-wrap justify-center gap-4">
+                                    <button onClick={() => setView('register')} className="bg-orange-600 px-8 py-4 rounded-2xl text-xl font-bold hover:scale-105 transition-all shadow-xl shadow-orange-600/30">Register Now</button>
+                                    <button onClick={() => setView('player')} className="bg-slate-800 px-8 py-4 rounded-2xl text-xl font-bold hover:scale-105 transition border border-slate-700">Explore Players</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'player' && (
+                            <div className="space-y-8 animate-in">
+                                <div className="flex flex-col md:flex-row justify-between gap-6 items-center">
+                                    <h3 className="heading-font text-3xl font-black uppercase italic">Active <span className="text-orange-500">Players</span></h3>
+                                    <div className="relative w-full md:w-80">
+                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
+                                            <Icons.Search />
+                                        </div>
+                                        <input 
+                                            type="text" 
+                                            placeholder="Search by player name..." 
+                                            className="w-full bg-slate-800/50 border border-slate-700 pl-12 pr-4 py-3 rounded-2xl focus:border-orange-500 outline-none transition-all"
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-wrap gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                                    <button onClick={() => setFilterRole('All')} className={`px-6 py-2 rounded-xl font-bold transition whitespace-nowrap ${filterRole === 'All' ? 'bg-orange-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>All Roles</button>
+                                    {roles.map(r => (
+                                        <button 
+                                            key={r.name} 
+                                            onClick={() => setFilterRole(r.name)} 
+                                            className={`flex items-center gap-2 px-6 py-2 rounded-xl font-bold transition whitespace-nowrap ${filterRole === r.name ? 'bg-orange-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+                                        >
+                                            {r.icon} {r.name}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                    {players
+                                        .filter(p => (filterRole === 'All' || p.role === filterRole) && (gameType === '' || p.game_type === gameType) && p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                                        .map(player => (
+                                        <div key={player.id} className="bg-slate-800/50 rounded-3xl overflow-hidden border border-slate-700/50 hover:border-orange-500/50 transition-all group hover:-translate-y-1">
+                                            <div className={`h-1.5 ${roles.find(r => r.name === player.role)?.color || 'bg-slate-600'}`}></div>
+                                            <div className="p-6">
+                                                <div className="flex justify-between items-start mb-6">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-12 h-12 rounded-2xl bg-slate-700 flex items-center justify-center font-bold text-slate-400">
+                                                            {player.name.charAt(0)}
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex items-center gap-1">
+                                                                <h4 className="font-bold text-lg">{player.name}</h4>
+                                                                {player.verified && <Icons.CheckCircle />}
+                                                            </div>
+                                                            <p className="text-xs text-slate-500 uppercase font-black">{player.game_type} • {player.rank}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3 mb-6 text-sm">
+                                                    <div className="bg-slate-900/40 p-3 rounded-2xl border border-white/5">
+                                                        <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Role</div>
+                                                        <div className="font-black text-white">{player.role}</div>
+                                                    </div>
+                                                    <div className="bg-slate-900/40 p-3 rounded-2xl border border-white/5">
+                                                        <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Time</div>
+                                                        <div className="font-black text-orange-400">{player.playing_time || 'Flexible'}</div>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    onClick={() => showContact(player)} 
+                                                    className="w-full bg-slate-700 hover:bg-orange-600 py-3 rounded-2xl font-bold transition-all text-sm group-hover:shadow-lg group-hover:shadow-orange-600/20"
+                                                >
+                                                    View Profile
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'tournaments' && (
+                            <div className="max-w-4xl mx-auto space-y-12 animate-in">
+                                <div className="text-center">
+                                    <h3 className="heading-font text-4xl font-black uppercase italic">Elite <span className="text-orange-500">Events</span></h3>
+                                    <p className="text-slate-500 mt-2">Join the battle and earn your glory.</p>
+                                </div>
+                                <div className="space-y-4">
+                                    {tournaments.map(t => (
+                                        <div key={t.id} className="bg-slate-800/40 p-6 rounded-[2rem] border border-slate-700/50 flex flex-col md:flex-row justify-between items-center gap-6 hover:bg-slate-800/60 transition">
+                                            <div className="flex gap-6 items-center w-full">
+                                                <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center text-orange-500 border border-slate-700 font-black italic text-xl shrink-0">FF</div>
+                                                <div className="flex-1">
+                                                    <h4 className="text-xl font-black uppercase tracking-tight mb-2">{t.title}</h4>
+                                                    
+                                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                                        <div className="bg-slate-900/40 px-3 py-2 rounded-xl border border-white/5">
+                                                            <div className="text-[9px] text-slate-500 uppercase font-bold">Win Prize</div>
+                                                            <div className="text-xs font-black text-green-400">{t.prize}</div>
+                                                        </div>
+                                                        <div className="bg-slate-900/40 px-3 py-2 rounded-xl border border-white/5">
+                                                            <div className="text-[9px] text-slate-500 uppercase font-bold">Entry Fee</div>
+                                                            <div className="text-xs font-black text-orange-400">{t.entry}</div>
+                                                        </div>
+                                                        <div className="bg-slate-900/40 px-3 py-2 rounded-xl border border-white/5">
+                                                            <div className="text-[9px] text-slate-500 uppercase font-bold">Time</div>
+                                                            <div className="text-xs font-black text-white italic">{t.time}</div>
+                                                        </div>
+                                                        <div className="bg-slate-900/40 px-3 py-2 rounded-xl border border-white/5">
+                                                            <div className="text-[9px] text-slate-500 uppercase font-bold">Type</div>
+                                                            <div className="text-xs font-black text-blue-400 uppercase">{t.mode}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-[10px] font-bold text-slate-600 mt-2 uppercase tracking-widest italic ml-1">
+                                                        Date: {t.date}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-3 w-full md:w-auto">
+                                                <button 
+                                                    className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all"
+                                                    onClick={() => handleTournamentView(t)}
+                                                >
+                                                    <Icons.Eye /> View
+                                                </button>
+                                                <button 
+                                                    className="flex-1 md:flex-none bg-orange-600 hover:bg-orange-700 px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-orange-600/20"
+                                                    onClick={() => handleTournamentJoin(t)}
+                                                >
+                                                    Join
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'news' && (
+                            <div className="max-w-4xl mx-auto space-y-12 animate-in">
+                                <div className="text-center">
+                                    <h3 className="heading-font text-4xl font-black uppercase italic">Game <span className="text-orange-500">Updates</span></h3>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {news.map(n => (
+                                        <div key={n.id} className="bg-slate-800/40 rounded-[2rem] border border-slate-700/50 p-8 hover:border-orange-500/30 transition-all">
+                                            <span className="text-[10px] bg-orange-600/20 text-orange-500 px-3 py-1 rounded-full font-black uppercase mb-4 inline-block">{n.date}</span>
+                                            <h4 className="text-xl font-bold mb-3 tracking-tight">{n.title}</h4>
+                                            <p className="text-slate-400 text-sm leading-relaxed">{n.content}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'register' && (
+                            <div className="max-w-2xl mx-auto animate-in">
+                                <div className="bg-slate-800/40 p-10 rounded-[3rem] border border-slate-700/50 shadow-2xl backdrop-blur-xl">
+                                    <div className="text-center mb-10">
+                                        <h3 className="heading-font text-3xl font-black uppercase italic mb-2">Create <span className="text-orange-500">Profile</span></h3>
+                                        <p className="text-slate-500 text-sm">Enter your details so squads can find you.</p>
+                                    </div>
+                                    
+                                    {formErrors.general && (
+                                        <div className="bg-red-500/10 border border-red-500/50 p-4 rounded-2xl mb-6 text-center">
+                                            <p className="text-red-400 text-sm font-bold">{formErrors.general}</p>
+                                        </div>
+                                    )}
+
+                                    <form onSubmit={handleRegister} className="space-y-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-[10px] text-slate-500 uppercase font-black ml-4 mb-1 block">Game Name (IGN)</label>
+                                                <input required name="name" type="text" placeholder="e.g. SKY_GAMER" className="w-full bg-slate-900/50 border border-slate-700 p-4 rounded-2xl outline-none focus:border-orange-500 transition" />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] text-slate-500 uppercase font-black ml-4 mb-1 block">Game UID</label>
+                                                <input required name="id_code" type="text" placeholder="e.g. 1234567890" className="w-full bg-slate-900/50 border border-slate-700 p-4 rounded-2xl outline-none focus:border-orange-500 transition" />
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-[10px] text-slate-500 uppercase font-black ml-4 mb-1 block">Game Type</label>
+                                                <select required name="game_type" className="w-full bg-slate-900/50 border border-slate-700 p-4 rounded-2xl outline-none focus:border-orange-500 transition appearance-none">
+                                                    <option value="">Select Mode</option>
+                                                    <option value="BR">Battle Royale (BR)</option>
+                                                    <option value="CS">Counter Strike (CS)</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] text-slate-500 uppercase font-black ml-4 mb-1 block">Playing Role</label>
+                                                <select required name="role" className="w-full bg-slate-900/50 border border-slate-700 p-4 rounded-2xl outline-none focus:border-orange-500 transition appearance-none">
+                                                    <option value="">Choose Role</option>
+                                                    <option>Rusher</option>
+                                                    <option>Sniper</option>
+                                                    <option>Support</option>
+                                                    <option>Assaulter</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-[10px] text-slate-500 uppercase font-black ml-4 mb-1 block">Rank</label>
+                                                <input required name="rank" type="text" placeholder="e.g. Heroic / Grandmaster" className="w-full bg-slate-900/50 border border-slate-700 p-4 rounded-2xl outline-none focus:border-orange-500 transition" />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] text-slate-500 uppercase font-black ml-4 mb-1 block">Age</label>
+                                                <input required name="age" type="number" placeholder="e.g. 18" min="10" className="w-full bg-slate-900/50 border border-slate-700 p-4 rounded-2xl outline-none focus:border-orange-500 transition" />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-[10px] text-slate-500 uppercase font-black ml-4 mb-1 block">Experience Level</label>
+                                                <select required name="experience" className="w-full bg-slate-900/50 border border-slate-700 p-4 rounded-2xl outline-none focus:border-orange-500 transition appearance-none">
+                                                    <option value="Beginner">Beginner</option>
+                                                    <option value="Intermediate">Intermediate</option>
+                                                    <option value="Advanced">Advanced</option>
+                                                    <option value="Pro">Pro Player</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] text-slate-500 uppercase font-black ml-4 mb-1 block">Preferred Playing Time</label>
+                                                <select required name="playing_time" className="w-full bg-slate-900/50 border border-slate-700 p-4 rounded-2xl outline-none focus:border-orange-500 transition appearance-none">
+                                                    <option value="Flexible">Flexible</option>
+                                                    <option value="Morning">Morning</option>
+                                                    <option value="Afternoon">Afternoon</option>
+                                                    <option value="Evening">Evening</option>
+                                                    <option value="Night">Night</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-[10px] text-slate-500 uppercase font-black ml-4 mb-1 block">WhatsApp Number (Contact)</label>
+                                            <input required name="contact" type="tel" placeholder="e.g. 9876543210" className="w-full bg-slate-900/50 border border-slate-700 p-4 rounded-2xl outline-none focus:border-orange-500 transition" />
+                                        </div>
+
+                                        <div>
+                                            <label className="text-[10px] text-slate-500 uppercase font-black ml-4 mb-1 block">Short Bio (Optional)</label>
+                                            <textarea name="bio" rows="3" placeholder="Tell something about your gameplay..." className="w-full bg-slate-900/50 border border-slate-700 p-4 rounded-2xl outline-none focus:border-orange-500 transition resize-none"></textarea>
+                                        </div>
+
+                                        <button type="submit" className="w-full bg-orange-600 hover:bg-orange-700 py-4 mt-4 rounded-2xl font-black text-xl transition-all shadow-xl shadow-orange-600/30 uppercase tracking-widest">
+                                            Create Profile
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+
+                    {/* Tournament View Details Modal */}
+                    {showViewModal && selectedTournament && (
+                        <div className="fixed inset-0 bg-slate-950/90 z-[100] flex items-center justify-center p-6 backdrop-blur-sm animate-in">
+                            <div className="bg-slate-800 w-full max-w-lg rounded-[3rem] p-10 border border-slate-700 shadow-2xl relative max-h-[90vh] overflow-y-auto scrollbar-hide">
+                                <button onClick={() => setShowViewModal(false)} className="absolute top-8 right-8 text-slate-500 hover:text-white transition">
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+                                
+                                <div className="mb-8">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="w-12 h-12 bg-orange-600 rounded-2xl flex items-center justify-center font-black italic border border-orange-500/20">FF</div>
+                                        <h3 className="heading-font text-2xl font-black uppercase italic leading-none">{selectedTournament.title}</h3>
+                                    </div>
+                                    <p className="text-slate-500 text-xs font-black uppercase tracking-widest ml-14">Custom Match Full Information</p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4 mb-8">
+                                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                                        <span className="text-slate-500 text-[10px] font-bold uppercase block mb-1">Match Time</span>
+                                        <span className="font-black text-orange-400">{selectedTournament.time}</span>
+                                    </div>
+                                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                                        <span className="text-slate-500 text-[10px] font-bold uppercase block mb-1">Per Kill Prize</span>
+                                        <span className="font-black text-green-400">{selectedTournament.per_kill}</span>
+                                    </div>
+                                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                                        <span className="text-slate-500 text-[10px] font-bold uppercase block mb-1">Map Name</span>
+                                        <span className="font-black text-white">{selectedTournament.map}</span>
+                                    </div>
+                                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                                        <span className="text-slate-500 text-[10px] font-bold uppercase block mb-1">Team Mode</span>
+                                        <span className="font-black text-white">{selectedTournament.mode}</span>
+                                    </div>
+                                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                                        <span className="text-slate-500 text-[10px] font-bold uppercase block mb-1">Entry Fees</span>
+                                        <span className="font-black text-white">{selectedTournament.entry}</span>
+                                    </div>
+                                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                                        <span className="text-slate-500 text-[10px] font-bold uppercase block mb-1">Date</span>
+                                        <span className="font-black text-white">{selectedTournament.date}</span>
+                                    </div>
+                                </div>
+
+                                <div className="bg-slate-900/30 p-5 rounded-2xl border border-white/5 mb-8">
+                                    <span className="text-slate-500 text-[10px] font-bold uppercase block mb-3">Custom Rules</span>
+                                    <ul className="text-xs text-slate-400 space-y-2 list-disc ml-4">
+                                        <li>No Hack / No Emulator players allowed.</li>
+                                        <li>Teaming up with enemies leads to permanent ban.</li>
+                                        <li>Room ID/Pass will be shared 15 mins before the match.</li>
+                                        <li>Screenshot mandatory for prize collection.</li>
+                                    </ul>
+                                </div>
+
+                                <div className="flex gap-4">
+                                    <button 
+                                        onClick={() => setShowViewModal(false)}
+                                        className="flex-1 bg-slate-700 hover:bg-slate-600 py-4 rounded-2xl font-black uppercase tracking-widest transition-all"
+                                    >
+                                        Close
+                                    </button>
+                                    <button 
+                                        onClick={() => { setShowViewModal(false); setShowTournamentModal(true); }}
+                                        className="flex-[2] bg-orange-600 hover:bg-orange-700 py-4 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl shadow-orange-600/20"
+                                    >
+                                        Join Now
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Tournament Join Modal */}
+                    {showTournamentModal && selectedTournament && (
+                        <div className="fixed inset-0 bg-slate-950/90 z-[100] flex items-center justify-center p-6 backdrop-blur-sm animate-in">
+                            <div className="bg-slate-800 w-full max-w-md rounded-[3rem] p-10 border border-slate-700 shadow-2xl relative">
+                                <button onClick={() => setShowTournamentModal(false)} className="absolute top-8 right-8 text-slate-500 hover:text-white transition">
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+                                <div className="mb-8 text-center">
+                                    <span className="text-orange-500 font-black text-[10px] uppercase tracking-[0.3em] block mb-2">Slot Selection</span>
+                                    <h3 className="heading-font text-2xl font-black uppercase italic leading-none">{selectedTournament.title}</h3>
+                                    <p className="text-[10px] text-slate-500 mt-2 uppercase">Mode: {selectedTournament.mode}</p>
+                                </div>
+
+                                <form className="space-y-6" onSubmit={handleReserveSlot}>
+                                    <div>
+                                        <label className="text-[10px] text-slate-500 uppercase font-black ml-4 mb-1 block">Team Name</label>
+                                        <input required type="text" placeholder="e.g. TEAM ELITE" className="w-full bg-slate-900/50 border border-slate-700 p-4 rounded-2xl outline-none focus:border-orange-500 transition" />
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] text-slate-500 uppercase font-black ml-4 mb-1 block">Mobile No. (WhatsApp)</label>
+                                        <input required type="tel" placeholder="e.g. 9876543210" className="w-full bg-slate-900/50 border border-slate-700 p-4 rounded-2xl outline-none focus:border-orange-500 transition" />
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] text-slate-500 uppercase font-black ml-4 mb-1 block">Team Slot Number</label>
+                                        <select required className="w-full bg-slate-900/50 border border-slate-700 p-4 rounded-2xl outline-none focus:border-orange-500 transition appearance-none">
+                                            <option value="">Select Slot Position</option>
+                                            {[...Array(getSlotCount(selectedTournament.mode))].map((_, i) => (
+                                                <option key={i+1} value={i+1}>Slot {i+1}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="flex gap-4 mt-6">
+                                        <button 
+                                            type="button"
+                                            onClick={() => setShowTournamentModal(false)}
+                                            className="flex-1 bg-slate-700 hover:bg-slate-600 py-4 rounded-2xl font-black uppercase tracking-widest transition-all"
+                                        >
+                                            Close
+                                        </button>
+                                        <button 
+                                            type="submit"
+                                            className="flex-[2] bg-orange-600 hover:bg-orange-700 py-4 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl shadow-orange-600/20"
+                                        >
+                                            Reserve Slot
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Payment QR — static image: static/images/tournament_upi_qr.png (replace file to change artwork) */}
+                    {showPaymentModal && selectedTournament && (
+                        <div className="fixed inset-0 bg-slate-950/90 z-[110] flex items-center justify-center p-6 backdrop-blur-md animate-in">
+                            <div className="bg-slate-800 w-full max-w-sm rounded-[3.5rem] p-10 border border-slate-700 shadow-2xl relative text-center">
+                                <button onClick={() => setShowPaymentModal(false)} className="absolute top-8 right-8 text-slate-500 hover:text-white transition">
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+                                
+                                <div className="mb-6">
+                                    <span className="text-orange-500 font-black text-[10px] uppercase tracking-[0.4em] block mb-2">Secure Payment</span>
+                                    <h3 className="heading-font text-xl font-black uppercase italic leading-none mb-2">Gol Tarun</h3>
+                                    <div className="bg-orange-600/10 border border-orange-500/20 py-3 rounded-2xl mb-6">
+                                        <span className="text-slate-400 text-xs font-bold uppercase block mb-1">Payable Amount</span>
+                                        <span className="text-3xl font-black text-white">{selectedTournament.entry}</span>
+                                    </div>
+                                </div>
+
+                                <div className="bg-slate-900/40 p-4 rounded-3xl mb-6 inline-block shadow-xl border border-slate-700">
+                                    <div className="w-56 max-w-full flex items-center justify-center relative">
+                                        <img 
+                                            src="/static/images/tournament_upi_qr.png"
+                                            alt="UPI QR Code"
+                                            className="w-full h-auto max-h-64 object-contain rounded-xl"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="mb-8">
+                                    <p className="text-orange-500 text-xs font-black mb-1 uppercase">UPI ID:</p>
+                                    <p className="text-white text-xs font-bold bg-slate-900/50 p-2 rounded-lg border border-white/5 break-all">tarungol600-1@oksbi</p>
+                                    <p className="text-[10px] text-slate-500 italic mt-3">Scan to pay with any UPI app (GPay, PhonePe, Paytm, etc.)</p>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <button 
+                                        onClick={() => { setShowPaymentModal(false); alert('Payment notification sent! Our team will contact you to verify.'); }}
+                                        className="w-full bg-green-600 hover:bg-green-700 py-4 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl shadow-green-600/20"
+                                    >
+                                        I Have Paid
+                                    </button>
+                                    <button 
+                                        onClick={() => setShowPaymentModal(false)}
+                                        className="w-full bg-slate-700 hover:bg-slate-600 py-3 rounded-2xl font-black text-xs uppercase transition-all"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                                
+                                <p className="text-[9px] text-slate-600 uppercase mt-6 font-bold">Do not forget to send your payment screenshot.</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Profile/Contact Modal */}
+                    {showContactModal && selectedPlayer && (
+                        <div className="fixed inset-0 bg-slate-950/90 z-[100] flex items-center justify-center p-6 backdrop-blur-sm animate-in">
+                            <div className="bg-slate-800 w-full max-w-lg rounded-[3rem] p-10 border border-slate-700 shadow-2xl relative max-h-[90vh] overflow-y-auto scrollbar-hide">
+                                <button onClick={() => setShowContactModal(false)} className="absolute top-8 right-8 text-slate-500 hover:text-white transition">
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+                                <div className="text-center mb-8">
+                                    <div className="w-24 h-24 bg-orange-600/20 text-orange-500 rounded-[2rem] flex items-center justify-center text-4xl font-black mx-auto mb-4 border border-orange-500/20">{selectedPlayer.name.charAt(0)}</div>
+                                    <h3 className="heading-font text-2xl font-black uppercase italic">{selectedPlayer.name}</h3>
+                                    <p className="text-slate-500 text-xs font-black uppercase tracking-widest mt-1">UID: {selectedPlayer.id_code}</p>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-4 mb-8">
+                                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                                        <span className="text-slate-500 text-[10px] font-bold uppercase block mb-1">Age</span>
+                                        <span className="font-black text-white">{selectedPlayer.age || '18'} Years</span>
+                                    </div>
+                                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                                        <span className="text-slate-500 text-[10px] font-bold uppercase block mb-1">Experience</span>
+                                        <span className="font-black text-white">{selectedPlayer.experience || 'Advanced'}</span>
+                                    </div>
+                                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                                        <span className="text-slate-500 text-[10px] font-bold uppercase block mb-1">Role</span>
+                                        <span className="font-black text-white">{selectedPlayer.role}</span>
+                                    </div>
+                                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                                        <span className="text-slate-500 text-[10px] font-bold uppercase block mb-1">Play Time</span>
+                                        <span className="font-black text-orange-500">{selectedPlayer.playing_time || 'Flexible'}</span>
+                                    </div>
+                                </div>
+
+                                {selectedPlayer.bio && (
+                                    <div className="bg-slate-900/30 p-5 rounded-2xl border border-white/5 mb-8">
+                                        <span className="text-slate-500 text-[10px] font-bold uppercase block mb-2">Bio</span>
+                                        <p className="text-sm text-slate-300 italic">"{selectedPlayer.bio}"</p>
+                                    </div>
+                                )}
+
+                                <div className="flex gap-4">
+                                    <button 
+                                        onClick={() => setShowContactModal(false)}
+                                        className="flex-1 bg-slate-700 hover:bg-slate-600 py-4 rounded-2xl font-black uppercase tracking-widest transition-all"
+                                    >
+                                        Close
+                                    </button>
+                                    <a 
+                                        href={waDigits(selectedPlayer.contact) ? `https://wa.me/${waDigits(selectedPlayer.contact)}?text=${encodeURIComponent(buildPlayerWhatsAppPrefill(selectedPlayer))}` : '#'}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex-[2] bg-green-600 hover:bg-green-700 py-4 rounded-2xl flex items-center justify-center gap-3 font-black uppercase transition-all shadow-xl shadow-green-600/20"
+                                    >
+                                        WhatsApp
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Footer */}
+                    <footer className="mt-20 py-10 border-t border-slate-800/50 bg-slate-950/50 text-center">
+                        <div className="flex items-center justify-center gap-2 mb-4">
+                            <div className="w-8 h-8 bg-slate-800 rounded flex items-center justify-center font-black text-xs italic transform -skew-x-12">FF</div>
+                            <span className="heading-font text-sm font-black uppercase tracking-tight italic text-slate-500">SQUAD<span className="text-orange-500/50">MAKER</span></span>
+                        </div>
+                        <p className="text-slate-600 text-[10px] uppercase font-bold tracking-widest">Connect with Pro Players • 2024 Esports Community</p>
+                    </footer>
+                </div>
+            );
+        }
+
+        const rootElement = document.getElementById('root');
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(<App />);
+    </script>
+</body>
+</html>

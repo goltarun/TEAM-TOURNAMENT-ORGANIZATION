@@ -1,0 +1,138 @@
+{% extends 'user/base.html' %}
+
+{% block title %}Register - FF Squad Maker{% endblock %}
+
+{% block content %}
+<section class="pt-28 pb-20 px-4 sm:px-6 lg:px-8 bg-slate-950/50 min-h-[70vh]">
+    <div class="max-w-4xl mx-auto">
+        <div class="text-center mb-12">
+            <h2 class="heading-font text-3xl md:text-4xl font-black uppercase italic tracking-tight mb-3">Join the <span class="text-orange-500">Battle</span></h2>
+            <p class="text-slate-400">Register yourself as a player to participate in tournaments.</p>
+        </div>
+        
+        <form id="register-form" class="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 md:p-10">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-bold text-slate-300 mb-2">IGN (Game Name)</label>
+                    <input type="text" name="name" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition-colors" placeholder="Your in-game name">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-300 mb-2">Game UID</label>
+                    <input type="text" name="id_code" required maxlength="12" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition-colors" placeholder="Free Fire UID">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-300 mb-2">WhatsApp Number</label>
+                    <input type="tel" name="contact" required maxlength="10" pattern="[0-9]{10}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition-colors" placeholder="9876543210" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-300 mb-2">Age</label>
+                    <input type="number" name="age" required min="10" max="60" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition-colors" placeholder="Your age">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-300 mb-2">Game Type</label>
+                    <select name="game_type" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition-colors">
+                        <option value="BR">Battle Royale</option>
+                        <option value="CS">Clash Squad</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-300 mb-2">Playing Role</label>
+                    <select name="role" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition-colors">
+                        <option value="Rusher">Rusher</option>
+                        <option value="Sniper">Sniper</option>
+                        <option value="Support">Support</option>
+                        <option value="Assaulter">Assaulter</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-300 mb-2">Rank</label>
+                    <input type="text" name="rank" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition-colors" placeholder="e.g. Heroic, Grandmaster">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-300 mb-2">Experience Level</label>
+                    <select name="experience" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition-colors">
+                        <option value="Beginner">Beginner (0-6 months)</option>
+                        <option value="Intermediate">Intermediate (6 months-2 years)</option>
+                        <option value="Advanced">Advanced (2-5 years)</option>
+                        <option value="Pro">Pro (5+ years)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-300 mb-2">Preferred Playing Time</label>
+                    <select name="playing_time" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition-colors">
+                        <option value="Morning">Morning (6AM - 12PM)</option>
+                        <option value="Afternoon">Afternoon (12PM - 6PM)</option>
+                        <option value="Evening">Evening (6PM - 12AM)</option>
+                        <option value="Night">Night (12AM - 6AM)</option>
+                        <option value="Flexible">Flexible (Any time)</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-bold text-slate-300 mb-2">Short Bio</label>
+                    <textarea name="bio" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition-colors" placeholder="Tell us about yourself..."></textarea>
+                </div>
+            </div>
+            <div id="register-message" class="mt-4 hidden"></div>
+                <button type="submit" class="mt-6 w-full bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-bold px-8 py-4 rounded-xl transition-all shadow-xl shadow-yellow-400/20 text-lg">
+                    Submit Registration
+                </button>
+        </form>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const data = Object.fromEntries(new FormData(form));
+        data.age = parseInt(data.age);
+        
+        const msgDiv = document.getElementById('register-message');
+        msgDiv.className = 'mt-4 p-4 rounded-lg text-sm font-bold';
+        
+        // Validate WhatsApp number
+        const contact = data.contact.trim();
+        const phoneRegex = /^[6-9]\d{9}$/;
+        const hasAlphabets = /[a-zA-Z]/.test(contact);
+        
+        if (hasAlphabets) {
+            msgDiv.classList.add('bg-red-600/20', 'text-red-400', 'border', 'border-red-600/30');
+            msgDiv.textContent = 'Alphabets are not allowed. Please enter only numbers.';
+            msgDiv.classList.remove('hidden');
+            return;
+        }
+        
+        if (!phoneRegex.test(contact)) {
+            msgDiv.classList.add('bg-red-600/20', 'text-red-400', 'border', 'border-red-600/30');
+            msgDiv.textContent = 'Please enter a valid 10-digit WhatsApp number starting with 6-9 (e.g., 9876543210)';
+            msgDiv.classList.remove('hidden');
+            return;
+        }
+        
+        try {
+            const res = await fetch('/api/register/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+            if (result.success) {
+                msgDiv.classList.add('bg-green-600/20', 'text-green-400', 'border', 'border-green-600/30');
+                msgDiv.textContent = 'Registration successful! Welcome to the squad.';
+                form.reset();
+            } else {
+                msgDiv.classList.add('bg-red-600/20', 'text-red-400', 'border', 'border-red-600/30');
+                msgDiv.textContent = result.error || 'Registration failed. Please try again.';
+            }
+            msgDiv.classList.remove('hidden');
+        } catch (err) {
+            msgDiv.classList.add('bg-red-600/20', 'text-red-400', 'border', 'border-red-600/30');
+            msgDiv.textContent = 'Network error. Please try again.';
+            msgDiv.classList.remove('hidden');
+        }
+    });
+</script>
+{% endblock %}
+

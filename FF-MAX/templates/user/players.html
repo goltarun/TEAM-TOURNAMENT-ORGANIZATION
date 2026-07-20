@@ -1,0 +1,209 @@
+{% extends 'user/base.html' %}
+
+{% block title %}Players - FF Squad Maker{% endblock %}
+
+{% block content %}
+<section class="pt-28 pb-20 px-4 sm:px-6 lg:px-8 min-h-[70vh]">
+    <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-12">
+            <h2 class="heading-font text-3xl md:text-4xl font-black uppercase italic tracking-tight mb-3">Registered <span class="text-orange-500">Players</span></h2>
+            <p class="text-slate-400">Meet the warriors ready for battle.</p>
+        </div>
+        <div id="players-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div class="col-span-full text-center text-slate-500 py-10">Loading players...</div>
+        </div>
+    </div>
+
+    <!-- Player detail (View) modal -->
+    <div id="player-detail-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 sm:p-6 bg-slate-950/90 backdrop-blur-sm" aria-hidden="true" role="dialog" aria-labelledby="player-detail-title">
+        <div class="absolute inset-0" id="player-detail-backdrop" aria-hidden="true"></div>
+        <div class="relative z-10 bg-slate-800 w-full max-w-lg rounded-3xl p-6 sm:p-10 border border-slate-700 shadow-2xl max-h-[90vh] overflow-y-auto animate-in">
+            <button type="button" id="player-detail-close" class="absolute top-5 right-5 text-slate-500 hover:text-white transition p-1" aria-label="Close">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <div id="player-detail-body"></div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let playersCache = [];
+
+    function esc(s) {
+        if (s == null || s === '') return '';
+        return String(s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function gameTypeLabel(gt) {
+        if (gt === 'BR') return 'Battle Royale';
+        if (gt === 'CS') return 'Clash Squad';
+        return esc(gt);
+    }
+
+    function waDigits(contact) {
+        return String(contact || '').replace(/\D/g, '');
+    }
+
+    function gameTypeLabelPlain(gt) {
+        if (gt === 'BR') return 'Battle Royale';
+        if (gt === 'CS') return 'Clash Squad';
+        return String(gt || '');
+    }
+
+    function buildWaPrefillMessage(p) {
+        const siteName = 'FF Squad Maker';
+        const siteUrl = (typeof window !== 'undefined' && window.location && window.location.origin)
+            ? window.location.origin
+            : '';
+        const lines = [
+            'Hello,',
+            '',
+            'I am contacting you after viewing your player profile on the FF Squad Maker website.',
+            '',
+            'Player details:',
+            '• Name (IGN): ' + String(p.name || ''),
+            '• Game UID: ' + String(p.id_code || ''),
+            '• Rank: ' + String(p.rank || ''),
+            '• Role: ' + String(p.role || ''),
+            '• Mode: ' + gameTypeLabelPlain(p.game_type),
+            '• Experience: ' + String(p.experience || '-'),
+            '• Preferred time: ' + String(p.playing_time || 'Flexible'),
+            '• Age: ' + (p.age != null ? String(p.age) + ' years' : '-'),
+            '• WhatsApp / Contact: ' + String(p.contact || ''),
+        ];
+        if (p.bio) {
+            lines.push('');
+            lines.push('Bio: ' + String(p.bio));
+        }
+        if (p.verified) {
+            lines.push('');
+            lines.push('Verified player: Yes');
+        }
+        lines.push('', '────────', siteName, siteUrl);
+        return lines.join('\n');
+    }
+
+    function openPlayerDetail(id) {
+        const p = playersCache.find(x => x.id === id);
+        if (!p) return;
+        const modal = document.getElementById('player-detail-modal');
+        const body = document.getElementById('player-detail-body');
+        const initial = esc((p.name || '?').charAt(0).toUpperCase());
+        const wa = waDigits(p.contact);
+        const waPrefill = buildWaPrefillMessage(p);
+        const waHref = wa ? 'https://wa.me/' + wa + '?text=' + encodeURIComponent(waPrefill) : '#';
+
+        body.innerHTML = `
+            <div class="text-center mb-8 pr-8">
+                <div class="w-20 h-20 sm:w-24 sm:h-24 bg-orange-600/20 text-orange-500 rounded-3xl flex items-center justify-center text-3xl sm:text-4xl font-black mx-auto mb-4 border border-orange-500/20 heading-font">${initial}</div>
+                <h3 id="player-detail-title" class="heading-font text-xl sm:text-2xl font-black uppercase italic text-white">${esc(p.name)}</h3>
+                <p class="text-slate-500 text-xs font-black uppercase tracking-widest mt-1">UID: ${esc(p.id_code)}</p>
+                ${p.verified ? '<p class="text-green-400 text-xs font-bold uppercase mt-2">Verified player</p>' : ''}
+            </div>
+            <div class="grid grid-cols-2 gap-3 sm:gap-4 mb-6">
+                <div class="bg-slate-900/50 p-3 sm:p-4 rounded-2xl border border-white/5">
+                    <span class="text-slate-500 text-[10px] font-bold uppercase block mb-1">Rank</span>
+                    <span class="font-black text-orange-400 text-sm sm:text-base">${esc(p.rank)}</span>
+                </div>
+                <div class="bg-slate-900/50 p-3 sm:p-4 rounded-2xl border border-white/5">
+                    <span class="text-slate-500 text-[10px] font-bold uppercase block mb-1">Contact</span>
+                    <span class="font-black text-white text-sm sm:text-base break-all">${esc(p.contact)}</span>
+                </div>
+                <div class="bg-slate-900/50 p-3 sm:p-4 rounded-2xl border border-white/5">
+                    <span class="text-slate-500 text-[10px] font-bold uppercase block mb-1">Age</span>
+                    <span class="font-black text-white">${esc(p.age)} <span class="text-slate-400 font-semibold text-xs">years</span></span>
+                </div>
+                <div class="bg-slate-900/50 p-3 sm:p-4 rounded-2xl border border-white/5">
+                    <span class="text-slate-500 text-[10px] font-bold uppercase block mb-1">Experience</span>
+                    <span class="font-black text-white text-sm">${esc(p.experience)}</span>
+                </div>
+                <div class="bg-slate-900/50 p-3 sm:p-4 rounded-2xl border border-white/5">
+                    <span class="text-slate-500 text-[10px] font-bold uppercase block mb-1">Role</span>
+                    <span class="font-black text-white text-sm">${esc(p.role)}</span>
+                </div>
+                <div class="bg-slate-900/50 p-3 sm:p-4 rounded-2xl border border-white/5">
+                    <span class="text-slate-500 text-[10px] font-bold uppercase block mb-1">Mode</span>
+                    <span class="font-black text-white text-sm">${gameTypeLabel(p.game_type)}</span>
+                </div>
+                <div class="bg-slate-900/50 p-3 sm:p-4 rounded-2xl border border-white/5 col-span-2">
+                    <span class="text-slate-500 text-[10px] font-bold uppercase block mb-1">Preferred time</span>
+                    <span class="font-black text-orange-500">${esc(p.playing_time || 'Flexible')}</span>
+                </div>
+            </div>
+            ${p.bio ? `
+            <div class="bg-slate-900/30 p-4 rounded-2xl border border-white/5 mb-6">
+                <span class="text-slate-500 text-[10px] font-bold uppercase block mb-2">Bio</span>
+                <p class="text-sm text-slate-300 italic">"${esc(p.bio)}"</p>
+            </div>` : ''}
+            <div class="flex flex-col sm:flex-row gap-3">
+                <button type="button" class="player-detail-close flex-1 bg-slate-700 hover:bg-slate-600 py-3.5 rounded-2xl font-black uppercase tracking-wider text-sm transition-all">Close</button>
+                ${wa ? `<a href="${waHref}" target="_blank" rel="noopener noreferrer" class="flex-[2] bg-green-600 hover:bg-green-700 py-3.5 rounded-2xl text-center font-black uppercase tracking-wider text-sm transition-all shadow-lg shadow-green-600/20 text-white">WhatsApp</a>` : ''}
+            </div>
+        `;
+
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('overflow-hidden');
+
+        body.querySelectorAll('.player-detail-close').forEach(el => {
+            el.addEventListener('click', closePlayerDetail);
+        });
+    }
+
+    function closePlayerDetail() {
+        const modal = document.getElementById('player-detail-modal');
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('overflow-hidden');
+        document.getElementById('player-detail-body').innerHTML = '';
+    }
+
+    document.getElementById('player-detail-close').addEventListener('click', closePlayerDetail);
+    document.getElementById('player-detail-backdrop').addEventListener('click', closePlayerDetail);
+
+    async function loadPlayers() {
+        try {
+            const res = await fetch('/api/players/');
+            const players = await res.json();
+            const container = document.getElementById('players-grid');
+            if (!players.length) {
+                container.innerHTML = '<div class="col-span-full text-center text-slate-500 py-10">No players registered yet.</div>';
+                playersCache = [];
+                return;
+            }
+            playersCache = players;
+            container.innerHTML = players.map(p => `
+                <div class="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5 card-hover animate-in flex flex-col">
+                    <div class="flex items-center gap-4 mb-3">
+                        <div class="w-12 h-12 bg-orange-600/20 rounded-full flex items-center justify-center">
+                            <span class="heading-font text-lg font-bold text-orange-500">${esc((p.name || '?').charAt(0).toUpperCase())}</span>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <h4 class="font-bold text-white truncate">${esc(p.name)}</h4>
+                            <p class="text-slate-400 text-xs">${esc(p.role)} &bull; ${gameTypeLabel(p.game_type)}</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mb-3">
+                        <span class="bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded-md font-semibold">${esc(p.rank)}</span>
+                        <span class="bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded-md font-semibold">${esc(p.experience)}</span>
+                        ${p.verified ? '<span class="bg-green-600/20 text-green-400 text-xs px-2 py-1 rounded-md font-semibold">Verified</span>' : ''}
+                    </div>
+                    <p class="text-slate-500 text-xs line-clamp-2 flex-1">${p.bio ? esc(p.bio) : 'No bio available.'}</p>
+                    <button type="button" class="player-view-btn mt-4 w-full py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-sm font-black uppercase tracking-wide transition shadow-lg shadow-orange-600/20" data-player-id="${p.id}">View details</button>
+                </div>
+            `).join('');
+            container.querySelectorAll('.player-view-btn').forEach(btn => {
+                btn.addEventListener('click', () => openPlayerDetail(Number(btn.dataset.playerId)));
+            });
+        } catch (e) { console.error('Failed to load players', e); }
+    }
+    loadPlayers();
+</script>
+{% endblock %}
+

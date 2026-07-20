@@ -1,0 +1,86 @@
+{% extends 'admin/base.html' %}
+
+{% load i18n %}
+
+
+{% block title %}Players | FF Squad Maker Admin{% endblock %}
+{% block page_title %}Players (Users){% endblock %}
+
+{% block content %}
+<div class="bg-slate-800/40 border border-slate-700/50 rounded-[2rem] overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full whitespace-nowrap">
+            <thead class="bg-slate-900/50">
+                <tr>
+                    <th>Player Info</th>
+                    <th>UID / Role</th>
+                    <th>Mode / Rank</th>
+                    <th>Contact</th>
+                    <th>Status</th>
+                    <th class="text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in players %}
+                <tr>
+                    <td>
+                        <div class="font-bold text-base">{{ p.name }}</div>
+                    </td>
+                    <td>
+                        <div class="text-xs text-slate-400 font-mono mb-1">UID: {{ p.id_code }}</div>
+                        <div class="text-xs font-bold uppercase">{{ p.role }}</div>
+                    </td>
+                    <td>
+                        <div class="text-xs font-black text-blue-400 mb-1">{{ p.game_type }}</div>
+                        <div class="text-xs text-slate-300">{{ p.rank }}</div>
+                    </td>
+                    <td class="text-sm font-mono text-slate-300">{{ p.contact }}</td>
+                    <td>
+                        {% if p.verified %}
+                            <span class="bg-green-500/10 text-green-400 px-3 py-1 rounded-full text-[10px] font-black uppercase border border-green-500/20">Verified</span>
+                        {% else %}
+                            <span class="bg-yellow-500/10 text-yellow-400 px-3 py-1 rounded-full text-[10px] font-black uppercase border border-yellow-500/20">Pending</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-right space-x-2">
+                        {% if p.verified %}
+                            <a href="/admin/squad/player/{{ p.id }}/change/?verified=1" class="p-2 bg-green-500/10 text-green-400 hover:bg-green-500/20 rounded-lg transition inline-block" title="Verified">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            </a>
+                            <a href="/admin/squad/player/{{ p.id }}/change/?verified=0" onclick="return confirm('Are you sure you want to change the status to Pending? (Pending karvu chhe?)');" class="p-2 bg-slate-700 text-slate-400 hover:bg-slate-600 rounded-lg transition inline-block" title="Set Pending">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </a>
+                        {% else %}
+                            <a href="/admin/squad/player/{{ p.id }}/change/?verified=1" onclick="return confirm('Are you sure you want to Verify this player? (Verify karvu chhe?)');" class="p-2 bg-orange-600/20 text-orange-300 hover:bg-orange-600/30 rounded-lg transition inline-block" title="Set Verified">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/></svg>
+                            </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="p-10 text-center text-slate-500">No players found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Player Statistics -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+    <div class="bg-slate-800/40 p-6 rounded-[2rem] border border-slate-700/50 text-center">
+        <p class="text-4xl font-black">{{ players.count }}</p>
+        <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Total Players</p>
+    </div>
+    <div class="bg-slate-800/40 p-6 rounded-[2rem] border border-slate-700/50 text-center">
+        <p class="text-4xl font-black">{{ verified_count }}</p>
+        <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Verified Players</p>
+    </div>
+    <div class="bg-slate-800/40 p-6 rounded-[2rem] border border-slate-700/50 text-center">
+        <p class="text-4xl font-black">{{ br_count }}</p>
+        <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">BR Players</p>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,165 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Tournaments | FF Squad Maker Admin{% endblock %}
+{% block page_title %}Tournaments{% endblock %}
+
+{% block content %}
+{% if alert_tournaments %}
+<div class="mb-6 rounded-[2rem] border border-red-500/40 bg-red-500/10 p-5 text-red-200">
+    <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+                <p class="text-sm font-black uppercase tracking-[0.2em] text-red-300">Upcoming Match Alert</p>
+                <p class="mt-1 text-sm">These tournaments are within 2 days of their match date and need attention.</p>
+            </div>
+        </div>
+        <div class="grid gap-3 lg:grid-cols-2">
+            {% for tournament in alert_tournaments %}
+            <div class="rounded-xl border border-red-400/30 bg-slate-900/60 p-4">
+                <div class="flex flex-col gap-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <p class="text-sm font-black uppercase tracking-[0.2em] text-red-300">Match</p>
+                            <p class="text-lg font-black text-white">{{ tournament.title }}</p>
+                        </div>
+                        <form method="post" action="{% url 'cancel_tournament_alert' tournament.id %}" class="flex flex-col gap-2 rounded-lg border border-red-400/20 bg-slate-950/40 p-3">
+                            {% csrf_token %}
+                            <div class="flex items-center gap-2">
+                                <button type="submit" name="action" value="send_otp" class="rounded-lg bg-red-500/20 px-3 py-1 text-xs font-black uppercase text-red-200 hover:bg-red-500/30">Send OTP</button>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="text" name="otp" placeholder="Enter OTP" class="w-24 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-xs font-black text-white" maxlength="6">
+                                <button type="submit" name="action" value="confirm" class="rounded-lg bg-orange-500/20 px-3 py-1 text-xs font-black uppercase text-orange-200 hover:bg-orange-500/30">Confirm</button>
+                            </div>
+                            <p class="text-[10px] uppercase tracking-[0.2em] text-red-300">OTP will be sent to 6353978826</p>
+                            {% if otp_sent and otp_code and tournament.id|stringformat:"s" == request.GET.tournament_id|default:"" %}
+                            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-orange-300">OTP sent: {{ otp_code }}</p>
+                            {% endif %}
+                        </form>
+                    </div>
+                    <div class="grid gap-2 text-sm text-red-100 sm:grid-cols-2">
+                        <div><span class="font-bold text-red-300">Mode:</span> {{ tournament.game_mode }}</div>
+                        <div><span class="font-bold text-red-300">Team:</span> {{ tournament.mode }}</div>
+                        <div><span class="font-bold text-red-300">Date:</span> {{ tournament.date|date:"M d, Y" }}</div>
+                        <div><span class="font-bold text-red-300">Time:</span> {{ tournament.time|time:"H:i" }}</div>
+                        <div><span class="font-bold text-red-300">Map:</span> {{ tournament.map_name }}</div>
+                        <div><span class="font-bold text-red-300">Prize:</span> {{ tournament.prize }}</div>
+                        <div><span class="font-bold text-red-300">Entry:</span> {{ tournament.entry_fee }}</div>
+                        <div><span class="font-bold text-red-300">Per Kill:</span> {{ tournament.per_kill }}</div>
+                        <div><span class="font-bold text-red-300">Status:</span> {{ tournament.status }}</div>
+                        <div><span class="font-bold text-red-300">Slots:</span> {{ tournament.max_slots }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+    <form method="get" class="flex w-full md:w-auto items-center gap-3">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search by tournament name" class="w-full md:w-80 px-4 py-3 rounded-xl border border-slate-700 bg-slate-900/80 text-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500">
+        <button type="submit" class="px-4 py-3 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold transition">Search</button>
+        {% if query %}
+        <a href="{% url 'tournament_list' %}" class="px-4 py-3 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 transition">Clear</a>
+        {% endif %}
+    </form>
+    <a href="/admin/squad/tournament/add/" class="bg-orange-600 hover:bg-orange-700 px-6 py-3 rounded-xl font-bold transition flex items-center gap-2 shadow-lg shadow-orange-600/20">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+        Add Tournament
+    </a>
+</div>
+
+{% regroup tournaments by game_mode as tournaments_by_mode %}
+
+{% for mode_group in tournaments_by_mode %}
+<div class="mb-8">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="heading-font text-2xl font-black uppercase italic tracking-tight text-orange-500">
+            {% if mode_group.grouper == 'BR Rank' %}BR Rank{% else %}Clash Squad{% endif %}
+        </h3>
+        <span class="bg-slate-800 text-slate-300 px-4 py-1 rounded-full text-xs font-bold border border-slate-700">{{ mode_group.list|length }} Tournament{{ mode_group.list|length|pluralize }}</span>
+    </div>
+
+    <div class="bg-slate-800/40 border border-slate-700/50 rounded-[2rem] overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full whitespace-nowrap">
+                <thead class="bg-slate-900/50">
+                    <tr>
+                        <th>Tournament Name</th>
+                        <th>Mode / Date</th>
+                        <th>Prize Pool</th>
+                        <th>Entry Fee</th>
+                        <th>Status</th>
+                        <th>Registrations</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in mode_group.list %}
+                    <tr>
+                        <td class="font-bold text-base">{{ t.title }}</td>
+                        <td>
+                            <div class="flex items-center gap-2">
+                                <div class="text-xs font-black text-blue-400 uppercase mb-1">{{ t.game_mode }} / {{ t.mode }}</div>
+                                {% if t in alert_tournaments %}
+                                <span class="rounded-full bg-red-500/10 px-2 py-1 text-[10px] font-black uppercase text-red-400 border border-red-500/20">Alert</span>
+                                {% endif %}
+                            </div>
+                            <div class="text-xs text-slate-400">{{ t.date|date:"M d, Y" }}</div>
+                        </td>
+                        <td class="font-black text-green-400">{{ t.prize }}</td>
+                        <td class="font-bold text-orange-400">{{ t.entry_fee }}</td>
+                        <td>
+                            <span class="bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full text-[10px] font-black uppercase border border-blue-500/20">{{ t.status }}</span>
+                        </td>
+                        <td>
+                            <a href="{% url 'tournament_registrations' t.id %}" class="inline-flex items-center gap-2 rounded-full bg-orange-500/10 px-3 py-1 text-xs font-black uppercase text-orange-400 border border-orange-500/20 hover:bg-orange-500/20 transition">
+                                {{ t.registrations.count }}
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            </a>
+                        </td>
+                        <td class="text-right space-x-2">
+                            <a href="/admin/squad/tournament/{{ t.id }}/change/" class="p-2 bg-slate-700 text-slate-400 hover:bg-slate-600 rounded-lg transition inline-block" title="Edit">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                            </a>
+                            <a href="{% url 'delete_tournament' t.id %}" class="p-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-lg transition inline-block" title="Delete" onclick="return confirm('Delete this tournament?')">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="p-10 text-center text-slate-500">No tournaments available.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% empty %}
+<div class="bg-slate-800/40 border border-slate-700/50 rounded-[2rem] p-10 text-center text-slate-500">No tournaments available.</div>
+{% endfor %}
+
+<!-- Tournament Statistics -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
+    <div class="bg-slate-800/40 p-6 rounded-[2rem] border border-slate-700/50 text-center">
+        <p class="text-4xl font-black">{{ tournaments.count }}</p>
+        <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Total Tournaments</p>
+    </div>
+    <div class="bg-slate-800/40 p-6 rounded-[2rem] border border-slate-700/50 text-center">
+        <p class="text-4xl font-black">{{ active_count }}</p>
+        <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Active</p>
+    </div>
+    <div class="bg-slate-800/40 p-6 rounded-[2rem] border border-slate-700/50 text-center">
+        <p class="text-4xl font-black">{{ free_count }}</p>
+        <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Free Entry</p>
+    </div>
+    <div class="bg-slate-800/40 p-6 rounded-[2rem] border border-slate-700/50 text-center">
+        <p class="text-4xl font-black">{{ total_regs }}</p>
+        <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Total Registrations</p>
+    </div>
+</div>
+{% endblock %}
